@@ -1,3 +1,5 @@
+Acknowledgments This project uses the mcp-local-rag repository by nkapila6 at https://github.com/nkapila6/mcp-local-rag We thank him for making this valuable resource available to the community.
+
 <img src='images/rag.jpeg' width='200' height='200'>
 
 # mcp-local-rag
