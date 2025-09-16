@@ -1,4 +1,56 @@
-Acknowledgments This project uses the mcp-local-rag repository by nkapila6 at https://github.com/nkapila6/mcp-local-rag We thank him for making this valuable resource available to the community.
+# Pydantic MCP Server Repository
+
+## 🌟 About This Project
+
+This repository provides **TWO complementary MCP server implementations**:
+
+1. **Local RAG Server** (Original) - For Claude Desktop and local development
+2. **HTTP MCP Server** (New) - For GitHub Copilot coding agent integration
+
+## 🎯 What's New: GitHub Copilot Integration
+
+We've added a **complete HTTP-based MCP server** specifically designed for **GitHub Copilot coding agent**. This server exposes powerful tools for Java, Node.js, and TypeScript development environments.
+
+### ✨ Key Features:
+- **HTTP Transport** - Compatible with GitHub's cloud-hosted agent
+- **Multi-Language Support** - Java, Node.js, TypeScript tooling
+- **Web Search Integration** - RAG-like search using DuckDuckGo
+- **Project Information** - Environment-specific configuration details
+- **Secure API** - Token-based authentication for production
+
+### 🚀 Quick Start for GitHub Copilot
+
+1. **Start the HTTP server:**
+```bash
+python -c "from src.mcp_local_rag.simple_http_server import run_server; run_server()"
+```
+
+2. **Deploy to your preferred cloud platform**
+
+3. **Add this JSON to your GitHub repository's MCP configuration:**
+```json
+{
+  "mcpServers": {
+    "pydanticAgent": {
+      "type": "http",
+      "url": "https://your-server-domain.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN_HERE"
+      },
+      "tools": ["get-project-info", "get-environment-tools", "rag-search"]
+    }
+  }
+}
+```
+
+📖 **[Complete Integration Guide →](HTTP_MCP_INTEGRATION.md)**
+
+---
+
+## 📚 Original Local RAG Implementation
+
+### Acknowledgments
+The original local RAG implementation is based on the excellent work by [nkapila6](https://github.com/nkapila6/mcp-local-rag). We thank them for making this valuable resource available.
 
 <img src='images/rag.jpeg' width='200' height='200'>
 
