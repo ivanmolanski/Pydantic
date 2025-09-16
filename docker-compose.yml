@@ -1,0 +1,16 @@
+services:
+  pydantic-mcp-server:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - MCP_API_KEY=${MCP_API_KEY:-dev-key-123}
+      - HOST=0.0.0.0
+      - PORT=8001
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
