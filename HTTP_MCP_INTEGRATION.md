@@ -118,9 +118,19 @@ Web search with RAG-like similarity sorting using DuckDuckGo.
 ### Step 1: Deploy Your Server
 
 Deploy the server to a publicly accessible URL using:
+
+#### 🆓 **Free Options** (Recommended for getting started):
+- **Railway.app** - 500 hours/month, easiest setup
+- **Render.com** - 750 hours/month, Python-optimized  
+- **Fly.io** - 160GB-hours/month, Docker-based
+- **Vercel** - 100GB-hours/month, serverless functions
+
+📖 **[Complete Free Hosting Guide →](FREE_HOSTING_GUIDE.md)**
+
+#### 💰 **Paid Options** (For production):
 - **Cloud platforms**: AWS, Google Cloud, Azure
-- **Container services**: Docker, Kubernetes
-- **Platform-as-a-Service**: Heroku, Railway, Render
+- **Container services**: Docker, Kubernetes  
+- **Platform-as-a-Service**: Heroku, Railway Pro, Render Pro
 
 ### Step 2: Configure GitHub Repository
 
@@ -202,31 +212,32 @@ curl -X POST http://localhost:8001/mcp \
 4. **Use reverse proxy** (nginx) for additional security
 5. **Monitor logs** for suspicious activity
 
-## 🚀 Deployment Examples
+## 🚀 Quick Deployment Examples
 
-### AWS EC2 with Docker
+### Railway (Recommended - Free & Easy)
 ```bash
-# On your EC2 instance
+# Quick deploy in 3 commands
+railway login
+railway new --from-repo https://github.com/ivanmolanski/Pydantic
+railway variables set MCP_API_KEY=$(openssl rand -base64 32)
+```
+
+### Render  
+```bash
+# Deploy from GitHub repo at render.com
+# Build: pip install -e .
+# Start: python -c "from src.mcp_local_rag.simple_http_server import run_server; run_server()"
+```
+
+### Docker (Self-hosted)
+```bash
 git clone https://github.com/ivanmolanski/Pydantic.git
 cd Pydantic
 docker build -t mcp-server .
-docker run -d -p 80:8001 -e MCP_API_KEY=$API_KEY mcp-server
+docker run -d -p 8001:8001 -e MCP_API_KEY=your-key mcp-server
 ```
 
-### Railway
-```bash
-railway login
-railway new
-railway add
-railway deploy
-```
-
-### Heroku
-```bash
-heroku create your-mcp-server
-heroku config:set MCP_API_KEY=your-api-key
-git push heroku main
-```
+📖 **[Complete Free Hosting Guide with Step-by-Step Instructions →](FREE_HOSTING_GUIDE.md)**
 
 ## 📊 Environment Support Matrix
 

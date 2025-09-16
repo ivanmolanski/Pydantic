@@ -25,7 +25,7 @@ We've added a **complete HTTP-based MCP server** specifically designed for **Git
 python -c "from src.mcp_local_rag.simple_http_server import run_server; run_server()"
 ```
 
-2. **Deploy to your preferred cloud platform**
+2. **Deploy to your preferred cloud platform (free options available!)**
 
 3. **Add this JSON to your GitHub repository's MCP configuration:**
 ```json
