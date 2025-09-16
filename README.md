@@ -70,7 +70,7 @@ Just paste this directly into Claude config. You can find the configuration path
         "mcp-local-rag":{
             "command": "uvx",
             "args": [
-            "--python=3.10",
+            "--python=3.13",
             "--from",
             "git+https://github.com/nkapila6/mcp-local-rag",
             "mcp-local-rag"

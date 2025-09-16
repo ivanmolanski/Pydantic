@@ -1,6 +1,7 @@
 """
 Simple HTTP-based MCP Server for GitHub Copilot Integration
 Uses Python's built-in http.server to avoid external dependencies.
+Optimized for Python 3.12+ with modern features.
 """
 
 import json
@@ -8,14 +9,85 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
+from enum import Enum
 
 # Import the existing RAG functionality
 from .main import rag_search
 
 
+class Environment(Enum):
+    """Supported development environments."""
+    JAVA = "java"
+    NODE = "node" 
+    TYPESCRIPT = "typescript"
+    GENERAL = "general"
+
+
+@dataclass
+class ProjectConfig:
+    """Configuration for a development project."""
+    description: str
+    environments: Dict[str, Dict[str, Any]]
+
+
 class ProjectInfoTools:
     """Tools for project information and environment support."""
+    
+    # Modern Python 3.12+ class variable with type annotation
+    PROJECTS: Dict[str, ProjectConfig] = {
+        "java-core": ProjectConfig(
+            description="Enterprise Java application with Spring Boot backend",
+            environments={
+                "java": {
+                    "framework": "Spring Boot 3.3",
+                    "build_tool": "Maven 3.9+",
+                    "java_version": "21",
+                    "dependencies": ["spring-boot-starter-web", "spring-boot-starter-data-jpa", "junit5"],
+                    "architecture": "Microservices with REST APIs"
+                },
+                "general": "Core Java business logic service with Spring Boot framework"
+            }
+        ),
+        "node-api": ProjectConfig(
+            description="RESTful API service built with Node.js and TypeScript",
+            environments={
+                "node": {
+                    "runtime": "Node.js 22+",
+                    "framework": "Express.js 5.0",
+                    "package_manager": "npm 10+",
+                    "dependencies": ["express", "@types/express", "typescript", "vitest"],
+                    "architecture": "RESTful microservice"
+                },
+                "typescript": {
+                    "version": "5.7+",
+                    "config": "Strict mode enabled with latest features",
+                    "tools": ["ESLint 9", "Prettier 3", "Vitest"],
+                    "types": "Full type coverage with @types packages"
+                },
+                "general": "Node.js TypeScript API service with Express framework"
+            }
+        ),
+        "frontend-app": ProjectConfig(
+            description="React-based frontend application with TypeScript",
+            environments={
+                "typescript": {
+                    "framework": "React 18+",
+                    "bundler": "Vite 6+",
+                    "state": "Redux Toolkit 2.0",
+                    "testing": "Vitest + React Testing Library",
+                    "styling": "Tailwind CSS 4.0"
+                },
+                "node": {
+                    "runtime": "Node.js 22+",
+                    "package_manager": "pnpm 9+",
+                    "scripts": "Build, test, lint automation with modern tooling"
+                },
+                "general": "Modern React frontend with TypeScript and Vite"
+            }
+        )
+    }
     
     @staticmethod
     def get_project_info(project_name: str, environment: str = "general") -> str:
@@ -23,60 +95,14 @@ class ProjectInfoTools:
         project_name = project_name.lower()
         environment = environment.lower()
         
-        projects = {
-            "java-core": {
-                "description": "Enterprise Java application with Spring Boot backend",
-                "java": {
-                    "framework": "Spring Boot 3.2",
-                    "build_tool": "Maven",
-                    "java_version": "17",
-                    "dependencies": ["spring-boot-starter-web", "spring-boot-starter-data-jpa", "junit5"],
-                    "architecture": "Microservices with REST APIs"
-                },
-                "general": "Core Java business logic service with Spring Boot framework"
-            },
-            "node-api": {
-                "description": "RESTful API service built with Node.js and TypeScript",
-                "node": {
-                    "runtime": "Node.js 18+",
-                    "framework": "Express.js",
-                    "package_manager": "npm",
-                    "dependencies": ["express", "@types/express", "typescript", "jest"],
-                    "architecture": "RESTful microservice"
-                },
-                "typescript": {
-                    "version": "5.0+",
-                    "config": "Strict mode enabled",
-                    "tools": ["ESLint", "Prettier", "Jest"],
-                    "types": "Full type coverage with @types packages"
-                },
-                "general": "Node.js TypeScript API service with Express framework"
-            },
-            "frontend-app": {
-                "description": "React-based frontend application with TypeScript",
-                "typescript": {
-                    "framework": "React 18",
-                    "bundler": "Vite",
-                    "state": "Redux Toolkit",
-                    "testing": "Vitest + React Testing Library",
-                    "styling": "Tailwind CSS"
-                },
-                "node": {
-                    "runtime": "Node.js 18+",
-                    "package_manager": "yarn",
-                    "scripts": "Build, test, lint automation"
-                },
-                "general": "Modern React frontend with TypeScript and Vite"
-            }
-        }
+        if project_name not in ProjectInfoTools.PROJECTS:
+            available = ', '.join(ProjectInfoTools.PROJECTS.keys())
+            return f"Project '{project_name}' not found. Available projects: {available}"
         
-        if project_name not in projects:
-            return f"Project '{project_name}' not found. Available projects: {', '.join(projects.keys())}"
+        project = ProjectInfoTools.PROJECTS[project_name]
         
-        project = projects[project_name]
-        
-        if environment in project:
-            env_info = project[environment]
+        if environment in project.environments:
+            env_info = project.environments[environment]
             if isinstance(env_info, dict):
                 info_parts = [f"**{project_name} - {environment.upper()} Environment:**"]
                 for key, value in env_info.items():
@@ -88,7 +114,7 @@ class ProjectInfoTools:
             else:
                 return f"**{project_name}:** {env_info}"
         else:
-            return f"**{project_name}:** {project['description']}"
+            return f"**{project_name}:** {project.description}"
     
     @staticmethod
     def get_environment_tools(environment: str, query: str = "") -> str:
@@ -99,54 +125,59 @@ class ProjectInfoTools:
         tools_info = {
             "java": {
                 "build_tools": {
-                    "maven": "XML-based project management and build tool",
-                    "gradle": "Groovy/Kotlin DSL build automation tool",
-                    "sbt": "Scala Build Tool, also used for Java projects"
+                    "maven": "Maven 3.9+ - XML-based project management and build tool",
+                    "gradle": "Gradle 8.10+ - Groovy/Kotlin DSL build automation tool",
+                    "sbt": "SBT 1.10+ - Scala Build Tool, also used for Java projects"
                 },
                 "testing": {
-                    "junit5": "Modern Java testing framework",
-                    "mockito": "Mocking framework for unit tests", 
-                    "testcontainers": "Integration testing with Docker containers",
-                    "spring-boot-test": "Testing support for Spring Boot applications"
+                    "junit5": "JUnit 5.11+ - Modern Java testing framework",
+                    "mockito": "Mockito 5.14+ - Mocking framework for unit tests", 
+                    "testcontainers": "TestContainers 1.20+ - Integration testing with Docker containers",
+                    "spring-boot-test": "Spring Boot Test 3.3+ - Testing support for Spring Boot applications"
                 },
                 "frameworks": {
-                    "spring-boot": "Production-ready Java application framework",
-                    "quarkus": "Kubernetes-native Java framework",
-                    "micronaut": "Modern microservices framework"
+                    "spring-boot": "Spring Boot 3.3+ - Production-ready Java application framework",
+                    "quarkus": "Quarkus 3.17+ - Kubernetes-native Java framework",
+                    "micronaut": "Micronaut 4.7+ - Modern microservices framework"
                 }
             },
             "node": {
                 "package_managers": {
-                    "npm": "Default Node.js package manager",
-                    "yarn": "Fast, reliable package manager",
-                    "pnpm": "Efficient package manager with hard links"
+                    "npm": "npm 10+ - Default Node.js package manager with workspaces",
+                    "yarn": "Yarn 4+ - Fast, reliable package manager with Plug'n'Play",
+                    "pnpm": "pnpm 9+ - Efficient package manager with hard links and workspaces"
                 },
                 "testing": {
-                    "jest": "JavaScript testing framework",
-                    "mocha": "Feature-rich test framework",
-                    "vitest": "Fast Vite-native test framework"
+                    "vitest": "Vitest 2.2+ - Fast Vite-native test framework with TypeScript support",
+                    "jest": "Jest 29+ - JavaScript testing framework with snapshot testing",
+                    "mocha": "Mocha 10+ - Feature-rich test framework"
                 },
                 "frameworks": {
-                    "express": "Minimal web application framework",
-                    "fastify": "High-performance web framework",
-                    "nest": "Progressive Node.js framework"
+                    "express": "Express.js 5+ - Minimal web application framework",
+                    "fastify": "Fastify 5+ - High-performance web framework",
+                    "nest": "NestJS 10+ - Progressive Node.js framework with TypeScript"
                 }
             },
             "typescript": {
                 "compilers": {
-                    "tsc": "Official TypeScript compiler",
-                    "esbuild": "Fast TypeScript/JavaScript bundler",
-                    "swc": "Super-fast TypeScript/JavaScript compiler"
+                    "tsc": "TypeScript 5.7+ - Official TypeScript compiler with latest language features",
+                    "esbuild": "esbuild 0.24+ - Fast TypeScript/JavaScript bundler and transpiler",
+                    "swc": "SWC 1.9+ - Super-fast TypeScript/JavaScript compiler in Rust"
                 },
                 "frameworks": {
-                    "react": "UI library with TypeScript support",
-                    "vue": "Progressive framework with TypeScript",
-                    "angular": "Full-featured TypeScript framework"
+                    "react": "React 18+ - UI library with advanced TypeScript support",
+                    "vue": "Vue 3.5+ - Progressive framework with excellent TypeScript integration",
+                    "angular": "Angular 19+ - Full-featured TypeScript framework with signals"
                 },
                 "bundlers": {
-                    "webpack": "Module bundler with TypeScript support",
-                    "vite": "Fast build tool with native TypeScript",
-                    "rollup": "Module bundler for libraries"
+                    "webpack": "Webpack 5+ - Module bundler with TypeScript support",
+                    "vite": "Vite 6+ - Fast build tool with native TypeScript and hot reload",
+                    "rollup": "Rollup 4+ - Module bundler optimized for libraries"
+                },
+                "tools": {
+                    "eslint": "ESLint 9+ with @typescript-eslint for code quality",
+                    "prettier": "Prettier 3+ for consistent code formatting",
+                    "vitest": "Vitest 2+ for fast TypeScript testing"
                 }
             }
         }
@@ -186,7 +217,7 @@ class MCPHandler(BaseHTTPRequestHandler):
     """HTTP request handler for MCP protocol."""
     
     def _verify_auth(self) -> bool:
-        """Verify API key authentication."""
+        """Verify API key authentication using modern Python features."""
         api_key = os.environ.get("MCP_API_KEY")
         if not api_key:
             return True  # No auth required in dev mode
@@ -195,34 +226,42 @@ class MCPHandler(BaseHTTPRequestHandler):
         if not auth_header:
             return False
         
+        # Use match-case for cleaner pattern matching (Python 3.10+)
         try:
-            scheme, token = auth_header.split(' ', 1)
-            if scheme.lower() != 'bearer':
-                return False
-            return token == api_key
+            parts = auth_header.split(' ', 1)
+            match parts:
+                case ['Bearer', token] | ['bearer', token]:
+                    return token == api_key
+                case _:
+                    return False
         except ValueError:
             return False
     
-    def _send_json_response(self, data: Dict[str, Any], status: int = 200):
-        """Send JSON response."""
+    def _send_json_response(self, data: Dict[str, Any], status: int = 200) -> None:
+        """Send JSON response with modern security headers."""
         self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        # Modern security headers
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('X-XSS-Protection', '1; mode=block')
         self.end_headers()
         
-        response_json = json.dumps(data, indent=2)
+        response_json = json.dumps(data, indent=2, ensure_ascii=False)
         self.wfile.write(response_json.encode('utf-8'))
     
-    def _send_error_response(self, message: str, status: int = 400, request_id: str = None):
-        """Send error response."""
+    def _send_error_response(self, message: str, status: int = 400, request_id: Optional[str] = None) -> None:
+        """Send error response with proper JSON-RPC 2.0 format."""
         error_data = {
             "jsonrpc": "2.0",
             "id": request_id,
             "error": {
-                "code": -32603,
-                "message": message
+                "code": -32603 if status == 500 else -32602,
+                "message": message,
+                "data": {"http_status": status}
             }
         }
         self._send_json_response(error_data, status)
@@ -445,21 +484,27 @@ class MCPHandler(BaseHTTPRequestHandler):
         print(f"[{self.address_string()}] {format % args}")
 
 
-def run_server():
-    """Run the HTTP MCP server."""
+def run_server() -> None:
+    """Run the HTTP MCP server with modern Python features."""
+    import sys
+    import signal
+    from contextlib import contextmanager
+    
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", 8001))
     api_key = os.environ.get("MCP_API_KEY")
     
+    # Modern f-string formatting with alignment
     print("=" * 60)
     print("🚀 Starting Pydantic MCP Server for GitHub Copilot")
     print("=" * 60)
-    print(f"Host: {host}")
-    print(f"Port: {port}")
-    print(f"Authentication: {'Enabled' if api_key else 'Development mode (no auth)'}")
-    print(f"Health Check: http://{host}:{port}/health")
-    print(f"MCP Endpoint: http://{host}:{port}/mcp")
-    print(f"Tools List: http://{host}:{port}/tools")
+    print(f"Python Version: {sys.version.split()[0]}")
+    print(f"Host:          {host}")
+    print(f"Port:          {port}")
+    print(f"Authentication: {'🔒 Enabled' if api_key else '🔓 Development mode (no auth)'}")
+    print(f"Health Check:  http://{host}:{port}/health")
+    print(f"MCP Endpoint:  http://{host}:{port}/mcp")
+    print(f"Tools List:    http://{host}:{port}/tools")
     print("=" * 60)
     
     if not api_key:
@@ -469,12 +514,27 @@ def run_server():
     
     server = HTTPServer((host, port), MCPHandler)
     
+    # Modern signal handling
+    def signal_handler(signum: int, frame) -> None:
+        print(f"\n📡 Received signal {signum}. Shutting down server gracefully...")
+        server.server_close()
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     try:
-        print(f"Server starting at http://{host}:{port}")
+        print(f"🌐 Server running at http://{host}:{port}")
+        print("   Press Ctrl+C to stop the server")
+        print()
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down server...")
+        print("\n🛑 Server stopped by user")
+    except Exception as e:
+        print(f"\n❌ Server error: {e}")
+    finally:
         server.server_close()
+        print("✅ Server shutdown complete")
 
 
 if __name__ == "__main__":
