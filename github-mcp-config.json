@@ -2,9 +2,9 @@
   "mcpServers": {
     "pydanticAgent": {
       "type": "http",
-      "url": "https://your-server-domain.com/mcp",
+      "url": "https://pydantic-mcp-server-production.up.railway.app/mcp",
       "headers": {
-        "Authorization": "Bearer YOUR_API_TOKEN_HERE"
+        "Authorization": "Bearer celebrated-magic"
       },
       "tools": ["get-project-info", "get-environment-tools", "rag-search"]
     }

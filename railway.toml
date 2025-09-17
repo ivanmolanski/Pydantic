@@ -12,5 +12,5 @@ restartPolicyType = "ON_FAILURE"
 PORT = { default = "8001" }
 HOST = { default = "0.0.0.0" }
 PYTHONPATH = { default = "/app/src" }
-
-# MCP_API_KEY should be set as a secret in Railway dashboard
+# Set this in Railway dashboard variables section:
+# MCP_API_KEY = "celebrated-magic"

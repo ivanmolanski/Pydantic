@@ -490,6 +490,8 @@ def run_server() -> None:
     print(f"Host:          {host}")
     print(f"Port:          {port}")
     print(f"Authentication: {'🔒 Enabled' if api_key else '🔓 Development mode (no auth)'}")
+    if api_key:
+        print(f"API Key:       {api_key[:8]}...")  # Show first 8 chars for debugging
     print(f"Health Check:  http://{host}:{port}/health")
     print(f"MCP Endpoint:  http://{host}:{port}/mcp")
     print(f"Tools List:    http://{host}:{port}/tools")
@@ -498,6 +500,11 @@ def run_server() -> None:
     if not api_key:
         print("⚠️  WARNING: No MCP_API_KEY set. Running in development mode.")
         print("   Set MCP_API_KEY environment variable for production use.")
+        print("   Example: export MCP_API_KEY='celebrated-magic'")
+        print()
+    else:
+        print("🔐 Authentication enabled. Clients must use Authorization header:")
+        print(f"   Authorization: Bearer {api_key}")
         print()
 
     server = HTTPServer((host, port), MCPHandler)
