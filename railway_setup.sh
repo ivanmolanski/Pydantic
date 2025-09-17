@@ -87,7 +87,7 @@ fi
 echo "Testing MCP endpoint with authentication..."
 MCP_RESPONSE=$(curl -s -X POST "$RAILWAY_URL/mcp" \
     -H "Content-Type: application/json" \
-    -H "Authorization: ******" \
+    -H "Authorization: Bearer $API_KEY" \
     -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}')
 
 if echo "$MCP_RESPONSE" | grep -q "tools"; then
