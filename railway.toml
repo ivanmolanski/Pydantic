@@ -1,6 +1,7 @@
 # Railway.app configuration for easy deployment
 [build]
-builder = "NIXPACKS"
+# Railway is currently using Dockerfile builder
+builder = "DOCKERFILE"
 
 [deploy]
 startCommand = "python -c 'from src.mcp_local_rag.simple_http_server import run_server; run_server()'"

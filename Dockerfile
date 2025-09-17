@@ -35,7 +35,8 @@ ENV HOST=0.0.0.0
 ENV PORT=8001
 
 # Set default API key (should be overridden in production)
-ENV MCP_API_KEY=your-secure-api-key
+# For Railway: Set MCP_API_KEY=celebrated-magic in environment variables
+ENV MCP_API_KEY=celebrated-magic
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

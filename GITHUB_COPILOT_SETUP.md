@@ -14,9 +14,15 @@ If you're getting a 401 Unauthorized error when GitHub Copilot tries to connect,
 ### Step 2: Set the Correct API Key in Railway
 
 1. In your Railway project dashboard, go to **Variables** tab
-2. Add a new environment variable:
+2. Update/Add these environment variables:
    - **Key**: `MCP_API_KEY`
-   - **Value**: `celebrated-magic` (or your preferred secure token)
+   - **Value**: `celebrated-magic` (replace `your-secure-api-key1`)
+   - **Key**: `PYTHONPATH`
+   - **Value**: `/app/src` (replace `/opt/render/project/src`)
+   - **Key**: `HOST`
+   - **Value**: `0.0.0.0` (replace `[::]`)
+   - **Key**: `PORT`
+   - **Value**: `8001`
 3. **Deploy** the changes - Railway will restart your server
 
 ### Step 3: Test Your Deployment
@@ -82,19 +88,32 @@ Update your repository's MCP configuration (usually in `.github/copilot/` or rep
 
 ## 🔍 Common Issues and Solutions
 
-### Issue 1: "Could not resolve host"
+### Issue 1: Railway Using Wrong Builder (Dockerfile vs NIXPACKS)
+- **Cause**: Railway detected Dockerfile and used it instead of NIXPACKS
+- **Solution**: This is actually fine! The Dockerfile has been updated to work correctly with Railway
+- **Action**: Just ensure environment variables are set correctly (see Step 2 above)
+
+### Issue 2: "Could not resolve host"
 - **Cause**: Incorrect Railway URL in configuration
 - **Solution**: Get the correct URL from Railway dashboard
 
-### Issue 2: HTTP 401 "Unauthorized" 
+### Issue 3: HTTP 401 "Unauthorized" 
 - **Cause**: API key mismatch between Railway environment and GitHub config
 - **Solution**: Ensure both use the same API key (`celebrated-magic`)
+- **Check**: Railway Variables tab should show `MCP_API_KEY = celebrated-magic`
 
-### Issue 3: Server not starting
+### Issue 4: Wrong Environment Variables
+- **Cause**: Copy-paste from other platforms (Render, Heroku)
+- **Solution**: Use these Railway-specific values:
+  - `PYTHONPATH = /app/src` (not `/opt/render/project/src`)
+  - `HOST = 0.0.0.0` (not `[::]`)
+  - `MCP_API_KEY = celebrated-magic` (not `your-secure-api-key1`)
+
+### Issue 5: Server not starting
 - **Cause**: Missing dependencies or configuration issues
 - **Solution**: Check Railway logs for Python import errors
 
-### Issue 4: DNS/Network issues
+### Issue 6: DNS/Network issues
 - **Cause**: Railway deployment region or networking
 - **Solution**: Wait a few minutes for DNS propagation, or redeploy
 
