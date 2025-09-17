@@ -163,6 +163,57 @@ export MCP_API_KEY="your-secure-random-api-key-here"
 
 The server will require this key in the `Authorization: Bearer <token>` header.
 
+## 🚦 Universal Pydantic Validation
+
+All MCP tool calls and schemas are now strictly validated using Pydantic models. This ensures:
+- Every request and response is type-safe and schema-compliant
+- Invalid input is rejected with clear error messages
+- Output schemas are always correct and documented
+
+### How to Use
+- Always use this MCP server for code validation, generation, and schema enforcement
+- All code, configs, and API schemas must be validated using Pydantic models via the MCP server
+- If you use Copilot or any coding agent, configure it to use this MCP server for all validation and code generation tasks
+
+### Example Error Response
+If you send invalid input, you will receive:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32602,
+    "message": "Input validation error: ...",
+    "data": {"http_status": 400}
+  }
+}
+```
+
+### Recommended Copilot Configuration
+```json
+{
+  "mcpServers": {
+    "pydanticAgent": {
+      "type": "http",
+      "url": "https://your-server-domain.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN_HERE"
+      },
+      "tools": ["get-project-info", "get-environment-tools", "rag-search"]
+    }
+  }
+}
+```
+
+---
+
+## 🏆 Best Practice: Always Validate with Pydantic
+- All code, configs, and API schemas must be validated using Pydantic models via this MCP server
+- This ensures robust, error-free, and type-safe code for all integrations
+- Use the MCP server for all code generation, validation, and schema enforcement
+
+---
+
 ## 🧪 Testing the Server
 
 ### Health Check

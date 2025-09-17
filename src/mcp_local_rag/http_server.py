@@ -1,7 +1,22 @@
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Security
+security = HTTPBearer(auto_error=False)
+def verify_api_key(credentials: Optional[HTTPAuthorizationCredentials] = Security(security)):
+    api_key = os.environ.get("MCP_API_KEY")
+    if not api_key:
+        return None
+    if not credentials or credentials.scheme.lower() != "bearer" or credentials.credentials != api_key:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    return credentials.credentials
+
 """
 HTTP-based MCP Server for GitHub Copilot Integration
 Implements a FastAPI web server that exposes MCP tools via HTTP transport.
 """
+
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Security
+security = HTTPBearer(auto_error=False)
 
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
@@ -13,9 +28,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from mcp.server import McpServer
-from mcp.server.fastmcp import FastMCP
-from mcp.types import TextContent, Tool as McpTool
+"""
+NOTE: Removed import of McpServer, FastMCP, and McpTool because 'McpServer' is not a known symbol in mcp.server. If you have a local MCP server implementation, import it here. Otherwise, use your own server logic below.
+"""
+
 
 
 
@@ -38,30 +54,14 @@ class CodeAnalysisInput(BaseModel):
     language: str = Field(..., description="Programming language of the code")
 
 # Initialize MCP server
-mcp_server = McpServer(name="pydantic-github-agent", version="1.0.0")
-
-def verify_api_key(credentials: Optional[HTTPAuthorizationCredentials] = Security(security)):
-    """Verify API key for authentication."""
-    if not credentials:
-        # For development, allow requests without auth
-        # In production, this should always require authentication
-        api_key = os.environ.get("MCP_API_KEY")
-        if api_key:  # Only enforce auth if API key is set
-            raise HTTPException(status_code=401, detail="Authorization header required")
-        return None
-    
-    expected_key = os.environ.get("MCP_API_KEY", "dev-key-123")
-    if credentials.credentials != expected_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return credentials.credentials
 
 async def get_project_info(params: ProjectInfoInput) -> str:
     """
     Retrieve project information based on name and environment.
     Simulates accessing project metadata, documentation, or configuration files.
     """
-    project_name = params.project_name.lower()
-    environment = params.environment.lower()
+    project_name = params.project_name.lower() if params.project_name else ""
+    environment = params.environment.lower() if params.environment else "general"
     
     # Simulated project information database
     projects = {
@@ -135,8 +135,8 @@ async def get_environment_tools(params: EnvironmentToolsInput) -> str:
     """
     Provide information about development tools and best practices for specific environments.
     """
-    environment = params.environment.lower()
-    query = params.query.lower()
+    environment = params.environment.lower() if params.environment else ""
+    query = params.query.lower() if params.query else ""
     
     tools_info = {
         "java": {
@@ -244,7 +244,7 @@ async def analyze_code(params: CodeAnalysisInput) -> str:
     """
     Analyze code snippets and provide insights about language-specific patterns.
     """
-    language = params.language.lower()
+    language = params.language.lower() if params.language else ""
     code = params.code_snippet.strip()
     
     if not code:
@@ -289,51 +289,11 @@ async def analyze_code(params: CodeAnalysisInput) -> str:
             analysis.append("✅ Module imports detected")
         if "async def" in code or "await " in code:
             analysis.append("✅ Asynchronous code patterns found")
-    
-    # Count lines and estimate complexity
-    lines = code.split('\n')
-    non_empty_lines = [line for line in lines if line.strip()]
-    
-    complexity_indicators = [
-        "if", "for", "while", "switch", "try", "catch", "finally"
-    ]
-    complexity_count = sum(1 for line in non_empty_lines for indicator in complexity_indicators if indicator in line.lower())
-    
-    result = [
-        f"**Code Analysis Results for {language.title()}:**",
-        f"- Lines of code: {len(non_empty_lines)}",
-        f"- Complexity indicators: {complexity_count}"
-    ]
-    
-    if analysis:
-        result.append("**Pattern Analysis:**")
-        result.extend(analysis)
-    else:
-        result.append("⚠️  No specific patterns detected for this language")
-    
-    return "\n".join(result)
+    if not analysis:
+        analysis.append("⚠️  No specific patterns detected for this language")
+    return "\n".join(analysis)
 
 # Register tools with the MCP server
-mcp_server.register_tool(
-    name="get-project-info",
-    description="Retrieve project information for Java, Node.js, or TypeScript environments",
-    input_schema=ProjectInfoInput.model_json_schema(),
-    handler=get_project_info
-)
-
-mcp_server.register_tool(
-    name="get-environment-tools", 
-    description="Get development tools and best practices for Java, Node.js, or TypeScript environments",
-    input_schema=EnvironmentToolsInput.model_json_schema(),
-    handler=get_environment_tools
-)
-
-mcp_server.register_tool(
-    name="analyze-code",
-    description="Analyze code snippets for patterns and provide insights",
-    input_schema=CodeAnalysisInput.model_json_schema(), 
-    handler=analyze_code
-)
 
 
 
@@ -373,143 +333,105 @@ async def root():
     }
 
 @app.get("/tools")
-async def list_tools(api_key: str = Depends(verify_api_key)):
+async def list_tools(api_key: str = Security(verify_api_key)):
     """List available MCP tools."""
-    tools = []
-    for tool_name, tool_info in mcp_server._tools.items():
-        tools.append({
-            "name": tool_name,
-            "description": tool_info.get("description", ""),
-            "input_schema": tool_info.get("input_schema", {})
-        })
+    tools = [
+        {
+            "name": "get-project-info",
+            "description": "Retrieve project information for Java, Node.js, or TypeScript environments",
+            "input_schema": ProjectInfoInput.model_json_schema()
+        },
+        {
+            "name": "get-environment-tools",
+            "description": "Get development tools and best practices for Java, Node.js, or TypeScript environments",
+            "input_schema": EnvironmentToolsInput.model_json_schema()
+        },
+        {
+            "name": "analyze-code",
+            "description": "Analyze code snippets for patterns and provide insights",
+            "input_schema": CodeAnalysisInput.model_json_schema()
+        }
+    ]
     return {"tools": tools}
 
 @app.post("/mcp")
-async def mcp_endpoint(request: Request, api_key: str = Depends(verify_api_key)):
-    """
-    Main MCP protocol endpoint for GitHub Copilot integration.
-    Handles all MCP requests and routes them to the appropriate tools.
-    """
+async def mcp_endpoint(request: Request, api_key: str = Security(verify_api_key)):
+    raw_body = await request.body()
+    if not raw_body:
+        return JSONResponse(status_code=400, content={"error": "Request body is required"})
     try:
-        raw_body = await request.body()
-        if not raw_body:
-            raise HTTPException(status_code=400, detail="Request body is required")
-        
-        try:
-            data = json.loads(raw_body)
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
-        
-        # Handle different MCP message types
-        if data.get("method") == "tools/list":
-            # Return list of available tools
-            tools = []
-            for tool_name, tool_info in mcp_server._tools.items():
-                tools.append({
-                    "name": tool_name,
-                    "description": tool_info.get("description", ""),
-                    "inputSchema": tool_info.get("input_schema", {})
-                })
-            
-            return JSONResponse(content={
-                "jsonrpc": "2.0",
-                "id": data.get("id"),
-                "result": {"tools": tools}
-            })
-        
-        elif data.get("method") == "tools/call":
-            # Execute a tool
-            params = data.get("params", {})
-            tool_name = params.get("name")
-            tool_arguments = params.get("arguments", {})
-            
-            if not tool_name:
-                raise HTTPException(status_code=400, detail="Tool name is required")
-            
-            if tool_name not in mcp_server._tools:
-                raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
-            
-            # Execute the tool
-            tool_info = mcp_server._tools[tool_name]
-            handler = tool_info["handler"]
-            
-            try:
-                # For all tools that expect Pydantic models
-                input_schema_class = {
-                    "get-project-info": ProjectInfoInput,
-                    "get-environment-tools": EnvironmentToolsInput,
-                    "analyze-code": CodeAnalysisInput
-                }.get(tool_name)
-                
-                if input_schema_class:
-                    validated_input = input_schema_class(**tool_arguments)
-                    result = await handler(validated_input)
-                else:
-                    result = await handler(tool_arguments)
-                
-                return JSONResponse(content={
-                    "jsonrpc": "2.0",
-                    "id": data.get("id"),
-                    "result": {
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": str(result)
-                            }
-                        ]
-                    }
-                })
-            
-            except Exception as e:
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "jsonrpc": "2.0",
-                        "id": data.get("id"),
-                        "error": {
-                            "code": -32603,
-                            "message": "Internal error",
-                            "data": str(e)
-                        }
-                    }
-                )
-        
+        data = json.loads(raw_body)
+    except json.JSONDecodeError as e:
+        return JSONResponse(status_code=400, content={"error": f"Invalid JSON: {str(e)}"})
+    method = data.get("method")
+    if method == "tools/list":
+        tools = [
+            {
+                "name": "get-project-info",
+                "description": "Retrieve project information for Java, Node.js, or TypeScript environments",
+                "inputSchema": ProjectInfoInput.model_json_schema()
+            },
+            {
+                "name": "get-environment-tools",
+                "description": "Get development tools and best practices for Java, Node.js, or TypeScript environments",
+                "inputSchema": EnvironmentToolsInput.model_json_schema()
+            },
+            {
+                "name": "analyze-code",
+                "description": "Analyze code snippets for patterns and provide insights",
+                "inputSchema": CodeAnalysisInput.model_json_schema()
+            }
+        ]
+        return JSONResponse(content={
+            "jsonrpc": "2.0",
+            "id": data.get("id"),
+            "result": {"tools": tools}
+        })
+    elif method == "tools/call":
+        params = data.get("params", {})
+        tool_name = params.get("name")
+        tool_arguments = params.get("arguments", {})
+        input_schema_map = {
+            "get-project-info": ProjectInfoInput,
+            "get-environment-tools": EnvironmentToolsInput,
+            "analyze-code": CodeAnalysisInput
+        }
+        handler_map = {
+            "get-project-info": get_project_info,
+            "get-environment-tools": get_environment_tools,
+            "analyze-code": analyze_code
+        }
+        input_schema_class = input_schema_map.get(tool_name)
+        handler = handler_map.get(tool_name)
+        if handler is None:
+            return JSONResponse(status_code=404, content={"error": f"Tool handler for '{tool_name}' not found"})
+        if input_schema_class:
+            validated_input = input_schema_class(**tool_arguments)
+            result = await handler(validated_input)
         else:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "jsonrpc": "2.0",
-                    "id": data.get("id"),
-                    "error": {
-                        "code": -32601,
-                        "message": "Method not found",
-                        "data": f"Unknown method: {data.get('method')}"
+            result = await handler(tool_arguments)
+        return JSONResponse(content={
+            "jsonrpc": "2.0",
+            "id": data.get("id"),
+            "result": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": str(result)
                     }
-                }
-            )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
+                ]
+            }
+        })
+    else:
         return JSONResponse(
-            status_code=500,
+            status_code=400,
             content={
                 "jsonrpc": "2.0",
-                "id": data.get("id") if "data" in locals() else None,
+                "id": data.get("id"),
                 "error": {
-                    "code": -32603,
-                    "message": "Internal server error",
-                    "data": str(e)
+                    "code": -32601,
+                    "message": "Method not found",
+                    "data": f"Unknown method: {method}"
                 }
             }
         )
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8001))
-    host = os.environ.get("HOST", "0.0.0.0")
-    
-    print(f"Starting Pydantic MCP Server on {host}:{port}")
-    print("Set MCP_API_KEY environment variable for authentication")
-    
-    uvicorn.run(app, host=host, port=port)

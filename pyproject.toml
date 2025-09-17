@@ -11,6 +11,7 @@ dependencies = [
     "requests",
     "fastapi",
     "uvicorn[standard]",
+    "pydantic",
 ]
 
 [[project.authors]]

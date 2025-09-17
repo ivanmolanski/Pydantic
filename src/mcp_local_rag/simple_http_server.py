@@ -12,6 +12,7 @@ import asyncio
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
+from pydantic import BaseModel, ValidationError, Field
 
 
 
@@ -46,7 +47,9 @@ class ProjectInfoTools:
                     "dependencies": ["spring-boot-starter-web", "spring-boot-starter-data-jpa", "junit5"],
                     "architecture": "Microservices with REST APIs"
                 },
-                "general": "Core Java business logic service with Spring Boot framework"
+                "general": {
+                    "description": "Core Java business logic service with Spring Boot framework"
+                }
             }
         ),
         "node-api": ProjectConfig(
@@ -65,7 +68,9 @@ class ProjectInfoTools:
                     "tools": ["ESLint 9", "Prettier 3", "Vitest"],
                     "types": "Full type coverage with @types packages"
                 },
-                "general": "Node.js TypeScript API service with Express framework"
+                "general": {
+                    "description": "Node.js TypeScript API service with Express framework"
+                }
             }
         ),
         "frontend-app": ProjectConfig(
@@ -83,7 +88,9 @@ class ProjectInfoTools:
                     "package_manager": "pnpm 9+",
                     "scripts": "Build, test, lint automation with modern tooling"
                 },
-                "general": "Modern React frontend with TypeScript and Vite"
+                "general": {
+                    "description": "Modern React frontend with TypeScript and Vite"
+                }
             }
         )
     }
@@ -108,7 +115,7 @@ class ProjectInfoTools:
                     if isinstance(value, list):
                         info_parts.append(f"- {key.title()}: {', '.join(value)}")
                     else:
-                        info_parts.append(f"- {key.title()}: {value}")
+                        info_parts.append(f"- {key.title}: {value}")
                 return "\n".join(info_parts)
             else:
                 return f"**{project_name}:** {env_info}"
@@ -210,6 +217,21 @@ class ProjectInfoTools:
                     result.append(f"- **{tool}**: {desc}")
                 result.append("")
             return "\n".join(result)
+
+
+# Pydantic models for input validation
+class ProjectInfoInput(BaseModel):
+    project_name: str = Field(..., description="The name of the project")
+    environment: str = Field("general", description="Environment type")
+
+class EnvironmentToolsInput(BaseModel):
+    environment: str = Field(..., description="Environment type: java, node, typescript")
+    query: str = Field("", description="Specific query about tools")
+
+class RagSearchInput(BaseModel):
+    query: str = Field(..., description="The query to search for")
+    num_results: int = Field(10, description="Number of results")
+    top_k: int = Field(5, description="Top K results")
 
 
 class MCPHandler(BaseHTTPRequestHandler):
@@ -355,39 +377,17 @@ class MCPHandler(BaseHTTPRequestHandler):
                     {
                         "name": "get-project-info",
                         "description": "Retrieve project information for Java, Node.js, or TypeScript environments",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "project_name": {"type": "string", "description": "The name of the project"},
-                                "environment": {"type": "string", "default": "general", "description": "Environment type"}
-                            },
-                            "required": ["project_name"]
-                        }
+                        "inputSchema": ProjectInfoInput.schema()
                     },
                     {
                         "name": "get-environment-tools",
                         "description": "Get development tools for Java, Node.js, or TypeScript environments",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "environment": {"type": "string", "description": "Environment type: java, node, typescript"},
-                                "query": {"type": "string", "default": "", "description": "Specific query about tools"}
-                            },
-                            "required": ["environment"]
-                        }
+                        "inputSchema": EnvironmentToolsInput.schema()
                     },
                     {
                         "name": "rag-search",
                         "description": "Search the web for information using RAG-like similarity sorting",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "query": {"type": "string", "description": "The query to search for"},
-                                "num_results": {"type": "integer", "default": 10},
-                                "top_k": {"type": "integer", "default": 5}
-                            },
-                            "required": ["query"]
-                        }
+                        "inputSchema": RagSearchInput.schema()
                     }
                 ]
                 
@@ -408,19 +408,29 @@ class MCPHandler(BaseHTTPRequestHandler):
                     return
                 
                 try:
-                    # Execute the tool
+                    # Universal Pydantic validation
                     if tool_name == "get-project-info":
-                        project_name = tool_arguments.get("project_name", "")
-                        environment = tool_arguments.get("environment", "general")
-                        result = ProjectInfoTools.get_project_info(project_name, environment)
-                    
+                        try:
+                            validated = ProjectInfoInput(**tool_arguments)
+                        except ValidationError as ve:
+                            self._send_error_response(f"Input validation error: {ve}", 400, request_id)
+                            return
+                        result = ProjectInfoTools.get_project_info(validated.project_name, validated.environment)
                     elif tool_name == "get-environment-tools":
-                        environment = tool_arguments.get("environment", "")
-                        query = tool_arguments.get("query", "")
-                        result = ProjectInfoTools.get_environment_tools(environment, query)
-                    
-
-                    
+                        try:
+                            validated = EnvironmentToolsInput(**tool_arguments)
+                        except ValidationError as ve:
+                            self._send_error_response(f"Input validation error: {ve}", 400, request_id)
+                            return
+                        result = ProjectInfoTools.get_environment_tools(validated.environment, validated.query)
+                    elif tool_name == "rag-search":
+                        try:
+                            validated = RagSearchInput(**tool_arguments)
+                        except ValidationError as ve:
+                            self._send_error_response(f"Input validation error: {ve}", 400, request_id)
+                            return
+                        # Placeholder: implement RAG search logic here
+                        result = f"RAG search for query '{validated.query}' (top_k={validated.top_k}, num_results={validated.num_results})"
                     else:
                         self._send_error_response(f"Unknown tool: {tool_name}", 400, request_id)
                         return
@@ -461,11 +471,18 @@ def run_server() -> None:
     import signal
     from contextlib import contextmanager
     
-    host = os.environ.get("HOST", "0.0.0.0")
+
+    host_env = os.environ.get("HOST", "0.0.0.0")
+    # Patch: Always use 0.0.0.0 if host is not a valid IPv4 address
+    import socket
+    try:
+        socket.inet_pton(socket.AF_INET, host_env)
+        host = host_env
+    except OSError:
+        host = "0.0.0.0"
     port = int(os.environ.get("PORT", 8001))
     api_key = os.environ.get("MCP_API_KEY")
-    
-    # Modern f-string formatting with alignment
+
     print("=" * 60)
     print("🚀 Starting Pydantic MCP Server for GitHub Copilot")
     print("=" * 60)
@@ -477,12 +494,12 @@ def run_server() -> None:
     print(f"MCP Endpoint:  http://{host}:{port}/mcp")
     print(f"Tools List:    http://{host}:{port}/tools")
     print("=" * 60)
-    
+
     if not api_key:
         print("⚠️  WARNING: No MCP_API_KEY set. Running in development mode.")
         print("   Set MCP_API_KEY environment variable for production use.")
         print()
-    
+
     server = HTTPServer((host, port), MCPHandler)
     
     # Modern signal handling
