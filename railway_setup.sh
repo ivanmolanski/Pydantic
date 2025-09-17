@@ -27,8 +27,8 @@ railway status
 echo ""
 echo "🔑 Setting up environment variables..."
 
-# Set the API key (using the one from the problem statement)
-API_KEY="celebrated-magic"
+# Set the API key (using the one from Railway Variables)
+API_KEY="your-secure-api-key1"
 echo "Setting MCP_API_KEY to: $API_KEY"
 railway variables set MCP_API_KEY="$API_KEY"
 
@@ -46,7 +46,7 @@ echo ""
 echo "🔧 Railway Configuration Info:"
 echo "   Your Railway dashboard shows Dockerfile builder is being used"
 echo "   Make sure these variables match in Railway dashboard:"
-echo "   - MCP_API_KEY = celebrated-magic (not 'your-secure-api-key1')"
+echo "   - MCP_API_KEY = your-secure-api-key1 (your actual key)"
 echo "   - PYTHONPATH = /app/src (not '/opt/render/project/src')"
 echo "   - HOST = 0.0.0.0 (not '[::]')"
 echo "   - PORT = 8001"
@@ -94,7 +94,7 @@ if echo "$MCP_RESPONSE" | grep -q "tools"; then
     echo "✅ MCP endpoint is working with authentication"
 elif echo "$MCP_RESPONSE" | grep -q "Unauthorized"; then
     echo "⚠️  MCP endpoint returned Unauthorized - check Railway dashboard variables:"
-    echo "   Make sure MCP_API_KEY = celebrated-magic (not 'your-secure-api-key1')"
+    echo "   Make sure MCP_API_KEY = your-secure-api-key1 (your actual API key)"
 else
     echo "❌ MCP endpoint failed"
     echo "Response: $MCP_RESPONSE"
@@ -114,7 +114,7 @@ cat << 'EOF'
       "type": "http",
       "url": "REPLACE_WITH_YOUR_RAILWAY_URL/mcp",
       "headers": {
-        "Authorization": "Bearer celebrated-magic"
+        "Authorization": "Bearer your-secure-api-key1"
       },
       "tools": ["get-project-info", "get-environment-tools", "rag-search"]
     }

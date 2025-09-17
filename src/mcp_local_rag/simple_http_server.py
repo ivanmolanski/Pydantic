@@ -500,7 +500,7 @@ def run_server() -> None:
     if not api_key:
         print("⚠️  WARNING: No MCP_API_KEY set. Running in development mode.")
         print("   Set MCP_API_KEY environment variable for production use.")
-        print("   Example: export MCP_API_KEY='celebrated-magic'")
+        print("   Example: export MCP_API_KEY='your-secure-api-key1'")
         print()
     else:
         print("🔐 Authentication enabled. Clients must use Authorization header:")

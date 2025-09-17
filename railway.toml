@@ -14,4 +14,4 @@ PORT = { default = "8001" }
 HOST = { default = "0.0.0.0" }
 PYTHONPATH = { default = "/app/src" }
 # Set this in Railway dashboard variables section:
-# MCP_API_KEY = "celebrated-magic"
+# MCP_API_KEY = "your-secure-api-key1"

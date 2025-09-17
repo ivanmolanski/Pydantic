@@ -16,7 +16,7 @@ If you're getting a 401 Unauthorized error when GitHub Copilot tries to connect,
 1. In your Railway project dashboard, go to **Variables** tab
 2. Update/Add these environment variables:
    - **Key**: `MCP_API_KEY`
-   - **Value**: `celebrated-magic` (replace `your-secure-api-key1`)
+   - **Value**: `your-secure-api-key1` (your actual API key)
    - **Key**: `PYTHONPATH`
    - **Value**: `/app/src` (replace `/opt/render/project/src`)
    - **Key**: `HOST`
@@ -36,7 +36,7 @@ curl https://your-actual-railway-url.up.railway.app/health
 # Test MCP endpoint (auth required)
 curl -X POST https://your-actual-railway-url.up.railway.app/mcp \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer celebrated-magic" \
+  -H "Authorization: Bearer your-secure-api-key1" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
 ```
 
@@ -78,7 +78,7 @@ Update your repository's MCP configuration (usually in `.github/copilot/` or rep
       "type": "http",
       "url": "https://YOUR-ACTUAL-RAILWAY-URL.up.railway.app/mcp",
       "headers": {
-        "Authorization": "Bearer celebrated-magic"
+        "Authorization": "Bearer your-secure-api-key1"
       },
       "tools": ["get-project-info", "get-environment-tools", "rag-search"]
     }
@@ -99,15 +99,15 @@ Update your repository's MCP configuration (usually in `.github/copilot/` or rep
 
 ### Issue 3: HTTP 401 "Unauthorized" 
 - **Cause**: API key mismatch between Railway environment and GitHub config
-- **Solution**: Ensure both use the same API key (`celebrated-magic`)
-- **Check**: Railway Variables tab should show `MCP_API_KEY = celebrated-magic`
+- **Solution**: Ensure both use the same API key (`your-secure-api-key1`)
+- **Check**: Railway Variables tab should show `MCP_API_KEY = your-secure-api-key1`
 
 ### Issue 4: Wrong Environment Variables
 - **Cause**: Copy-paste from other platforms (Render, Heroku)
 - **Solution**: Use these Railway-specific values:
   - `PYTHONPATH = /app/src` (not `/opt/render/project/src`)
   - `HOST = 0.0.0.0` (not `[::]`)
-  - `MCP_API_KEY = celebrated-magic` (not `your-secure-api-key1`)
+  - `MCP_API_KEY = your-secure-api-key1` (your actual API key)
 
 ### Issue 5: Server not starting
 - **Cause**: Missing dependencies or configuration issues
@@ -146,12 +146,12 @@ Test locally before deploying:
 
 ```bash
 # Set the API key and start server
-export MCP_API_KEY="celebrated-magic"
+export MCP_API_KEY="your-secure-api-key1"
 python -c "from src.mcp_local_rag.simple_http_server import run_server; run_server()"
 
 # In another terminal, test the endpoint
 curl -X POST http://localhost:8001/mcp \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer celebrated-magic" \
+  -H "Authorization: Bearer your-secure-api-key1" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
 ```

@@ -5,7 +5,7 @@
 
 set -e
 
-API_KEY="celebrated-magic"
+API_KEY="your-secure-api-key1"
 LOCAL_URL="http://localhost:8001"
 RAILWAY_URL="${1:-https://pydantic-mcp-server-production.up.railway.app}"
 
