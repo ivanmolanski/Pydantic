@@ -8,7 +8,6 @@ dependencies = [
     "aiohttp",
     "beautifulsoup4",
     "duckduckgo-search",
-    "mcp[cli]",
     "requests",
     "fastapi",
     "uvicorn[standard]",
