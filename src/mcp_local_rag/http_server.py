@@ -17,8 +17,7 @@ from mcp.server import McpServer
 from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent, Tool as McpTool
 
-# Import the existing RAG functionality
-from .main import rag_search
+
 
 # Authentication setup
 security = HTTPBearer(auto_error=False)
@@ -336,20 +335,7 @@ mcp_server.register_tool(
     handler=analyze_code
 )
 
-mcp_server.register_tool(
-    name="rag-search",
-    description="Search the web for information using RAG-like similarity sorting",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "The query to search for"},
-            "num_results": {"type": "integer", "default": 10, "description": "Number of results to return"},
-            "top_k": {"type": "integer", "default": 5, "description": "Use top k results for content"}
-        },
-        "required": ["query"]
-    },
-    handler=lambda params: rag_search(params.get("query", ""), params.get("num_results", 10), params.get("top_k", 5))
-)
+
 
 # Create FastAPI application
 app = FastAPI(
@@ -448,22 +434,18 @@ async def mcp_endpoint(request: Request, api_key: str = Depends(verify_api_key))
             handler = tool_info["handler"]
             
             try:
-                if tool_name == "rag-search":
-                    # Special handling for rag_search function signature
-                    result = await handler(tool_arguments)
+                # For all tools that expect Pydantic models
+                input_schema_class = {
+                    "get-project-info": ProjectInfoInput,
+                    "get-environment-tools": EnvironmentToolsInput,
+                    "analyze-code": CodeAnalysisInput
+                }.get(tool_name)
+                
+                if input_schema_class:
+                    validated_input = input_schema_class(**tool_arguments)
+                    result = await handler(validated_input)
                 else:
-                    # For other tools that expect Pydantic models
-                    input_schema_class = {
-                        "get-project-info": ProjectInfoInput,
-                        "get-environment-tools": EnvironmentToolsInput,
-                        "analyze-code": CodeAnalysisInput
-                    }.get(tool_name)
-                    
-                    if input_schema_class:
-                        validated_input = input_schema_class(**tool_arguments)
-                        result = await handler(validated_input)
-                    else:
-                        result = await handler(tool_arguments)
+                    result = await handler(tool_arguments)
                 
                 return JSONResponse(content={
                     "jsonrpc": "2.0",

@@ -5,20 +5,21 @@ description = "MCP \"server\" that locally performs a RAG search on your input q
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
- "aiohttp>=3.12.15",
- "beautifulsoup4>=4.13.5",
- "duckduckgo-search>=8.1.1",
- "mcp[cli]>=1.14.0",
- "requests>=2.32.5",
- "fastapi>=0.116.1",
- "uvicorn[standard]>=0.35.0",
+    "aiohttp",
+    "beautifulsoup4",
+    "duckduckgo-search",
+    "mcp[cli]",
+    "requests",
+    "fastapi",
+    "uvicorn[standard]",
 ]
+
 [[project.authors]]
 name = "Nikhil Kapila"
 email = "info@nkapila.me"
 
 [build-system]
-requires = [ "hatchling>=1.27.0",]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]

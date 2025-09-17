@@ -13,8 +13,7 @@ from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 
-# Import the existing RAG functionality
-from .main import rag_search
+
 
 
 class Environment(Enum):
@@ -322,19 +321,7 @@ class MCPHandler(BaseHTTPRequestHandler):
                         "required": ["environment"]
                     }
                 },
-                {
-                    "name": "rag-search",
-                    "description": "Search the web for information using RAG-like similarity sorting",
-                    "input_schema": {
-                        "type": "object",
-                        "properties": {
-                            "query": {"type": "string", "description": "The query to search for"},
-                            "num_results": {"type": "integer", "default": 10},
-                            "top_k": {"type": "integer", "default": 5}
-                        },
-                        "required": ["query"]
-                    }
-                }
+
             ]
             
             self._send_json_response({"tools": tools})
@@ -432,23 +419,7 @@ class MCPHandler(BaseHTTPRequestHandler):
                         query = tool_arguments.get("query", "")
                         result = ProjectInfoTools.get_environment_tools(environment, query)
                     
-                    elif tool_name == "rag-search":
-                        query = tool_arguments.get("query", "")
-                        num_results = tool_arguments.get("num_results", 10)
-                        top_k = tool_arguments.get("top_k", 5)
-                        
-                        # Call rag_search synchronously
-                        search_result = rag_search(query, num_results, top_k)
-                        
-                        # Format the result
-                        if isinstance(search_result, dict) and "content" in search_result:
-                            content_text = []
-                            for item in search_result["content"]:
-                                if isinstance(item, dict) and "text" in item:
-                                    content_text.append(item["text"])
-                            result = "\n\n".join(content_text) if content_text else str(search_result)
-                        else:
-                            result = str(search_result)
+
                     
                     else:
                         self._send_error_response(f"Unknown tool: {tool_name}", 400, request_id)
