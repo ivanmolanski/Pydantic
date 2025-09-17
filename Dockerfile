@@ -8,8 +8,9 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better layer caching
-COPY pyproject.toml uv.lock ./
+
+# Copy requirements and README for build
+COPY pyproject.toml uv.lock README.md ./
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -e .
