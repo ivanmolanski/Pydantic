@@ -1,6 +1,7 @@
 # Railway.app configuration for easy deployment
 [build]
-builder = "NIXPACKS"
+# Railway is currently using Dockerfile builder
+builder = "DOCKERFILE"
 
 [deploy]
 startCommand = "python -c 'from src.mcp_local_rag.simple_http_server import run_server; run_server()'"
@@ -12,5 +13,5 @@ restartPolicyType = "ON_FAILURE"
 PORT = { default = "8001" }
 HOST = { default = "0.0.0.0" }
 PYTHONPATH = { default = "/app/src" }
-
-# MCP_API_KEY should be set as a secret in Railway dashboard
+# Set this in Railway dashboard variables section:
+# MCP_API_KEY = "your-secure-api-key1"

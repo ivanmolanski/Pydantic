@@ -35,7 +35,8 @@ ENV HOST=0.0.0.0
 ENV PORT=8001
 
 # Set default API key (should be overridden in production)
-ENV MCP_API_KEY=your-secure-api-key
+# For Railway: Use your actual API key from Railway Variables
+ENV MCP_API_KEY=your-secure-api-key1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

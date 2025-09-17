@@ -163,6 +163,12 @@ export MCP_API_KEY="your-secure-random-api-key-here"
 
 The server will require this key in the `Authorization: Bearer <token>` header.
 
+### Step 4: Troubleshooting Connection Issues
+
+If you encounter HTTP 401 "Unauthorized" errors, see the comprehensive troubleshooting guide:
+
+📖 **[GitHub Copilot Setup & Troubleshooting Guide →](GITHUB_COPILOT_SETUP.md)**
+
 ## 🚦 Universal Pydantic Validation
 
 All MCP tool calls and schemas are now strictly validated using Pydantic models. This ensures:
@@ -221,15 +227,17 @@ If you send invalid input, you will receive:
 curl http://localhost:8001/health
 ```
 
-### List Available Tools
+### List Available Tools (with Authentication)
 ```bash
-curl http://localhost:8001/tools
+curl http://localhost:8001/tools \
+  -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-### Test MCP Protocol
+### Test MCP Protocol (with Authentication)
 ```bash
 curl -X POST http://localhost:8001/mcp \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
@@ -237,10 +245,11 @@ curl -X POST http://localhost:8001/mcp \
   }'
 ```
 
-### Execute a Tool
+### Execute a Tool (with Authentication)
 ```bash
 curl -X POST http://localhost:8001/mcp \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
     "jsonrpc": "2.0",
     "id": 2,
