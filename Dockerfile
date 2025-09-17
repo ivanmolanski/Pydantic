@@ -1,7 +1,9 @@
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
+
+# Force rebuild: ensure Railway uses python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -12,7 +14,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and README for build
 COPY pyproject.toml uv.lock README.md ./
 
-# Install Python dependencies
+# Install Python dependencies (explicitly include pydantic)
+RUN pip install --no-cache-dir pydantic aiohttp beautifulsoup4 duckduckgo-search requests fastapi "uvicorn[standard]"
 RUN pip install --no-cache-dir -e .
 
 # Copy source code
@@ -31,9 +34,12 @@ ENV PYTHONPATH=/app/src
 ENV HOST=0.0.0.0
 ENV PORT=8001
 
+# Set default API key (should be overridden in production)
+ENV MCP_API_KEY=your-secure-api-key
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8001/health')"
 
-# Start the server
-CMD ["python", "-m", "src.mcp_local_rag.http_server"]
+# Start the server (simple HTTP MCP server)
+CMD ["python", "-c", "from src.mcp_local_rag.simple_http_server import run_server; run_server()"]
