@@ -371,8 +371,32 @@ class MCPHandler(BaseHTTPRequestHandler):
             
             request_id = data.get("id")
             method = data.get("method")
-            
-            if method == "tools/list":
+            params = data.get("params", {})
+
+            if method == "initialize":
+                # MCP initialization handshake - return server capabilities
+                self._send_json_response({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {
+                            "tools": {},
+                            "resources": {},
+                            "prompts": {}
+                        },
+                        "serverInfo": {
+                            "name": "pydantic-mcp-server",
+                            "version": "1.0.0"
+                        }
+                    }
+                })
+
+            elif method == "notifications/initialized":
+                # Client acknowledges initialization - no response needed for notifications
+                return
+
+            elif method == "tools/list":
                 tools = [
                     {
                         "name": "get-project-info",
@@ -453,7 +477,16 @@ class MCPHandler(BaseHTTPRequestHandler):
                     self._send_error_response(f"Tool execution error: {str(e)}", 500, request_id)
             
             else:
-                self._send_error_response(f"Unknown method: {method}", 400, request_id)
+                # Unknown method - return proper JSON-RPC error
+                self._send_json_response({
+                    "jsonrpc": "2.0", 
+                    "id": request_id,
+                    "error": {
+                        "code": -32601,
+                        "message": "Method not found",
+                        "data": {"method": method}
+                    }
+                })
         
         except json.JSONDecodeError as e:
             self._send_error_response(f"Invalid JSON: {str(e)}")
