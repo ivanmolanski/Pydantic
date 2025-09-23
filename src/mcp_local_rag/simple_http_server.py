@@ -8,7 +8,6 @@ import json
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-import asyncio
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -236,6 +235,99 @@ class RagSearchInput(BaseModel):
 
 class MCPHandler(BaseHTTPRequestHandler):
     """HTTP request handler for MCP protocol."""
+
+    def _handle_initialize(self, request_id: str) -> None:
+        """Handles the 'initialize' MCP method."""
+        self._send_json_response({
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {},
+                    "resources": {},
+                    "prompts": {}
+                },
+                "serverInfo": {
+                    "name": "pydantic-mcp-server",
+                    "version": "1.0.0"
+                }
+            }
+        })
+
+    def _get_tool_definitions(self) -> list[dict[str, Any]]:
+        """Returns a list of tool definitions."""
+        return [
+            {
+                "name": "get-project-info",
+                "description": "Retrieve project information for Java, Node.js, or TypeScript environments",
+                "inputSchema": ProjectInfoInput.model_json_schema()
+            },
+            {
+                "name": "get-environment-tools",
+                "description": "Get development tools for Java, Node.js, or TypeScript environments",
+                "inputSchema": EnvironmentToolsInput.model_json_schema()
+            },
+            {
+                "name": "rag-search",
+                "description": "Search the web for information using RAG-like similarity sorting",
+                "inputSchema": RagSearchInput.model_json_schema()
+            }
+        ]
+
+    def _handle_tools_list(self, request_id: str) -> None:
+        """Handles the 'tools/list' MCP method."""
+        tools = self._get_tool_definitions()
+        response = {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": {"tools": tools}
+        }
+        self._send_json_response(response)
+
+    def _handle_tool_call(self, request_id: str, params: dict[str, Any]) -> None:
+        """Handles the 'tools/call' MCP method."""
+        tool_name = params.get("name")
+        tool_arguments = params.get("arguments", {})
+
+        if not tool_name:
+            self._send_error_response("Tool name is required", 400, request_id)
+            return
+
+        try:
+            # Map tool names to their validation models and implementation functions
+            tool_map = {
+                "get-project-info": (ProjectInfoInput, lambda v: ProjectInfoTools.get_project_info(v.project_name, v.environment)),
+                "get-environment-tools": (EnvironmentToolsInput, lambda v: ProjectInfoTools.get_environment_tools(v.environment, v.query)),
+                "rag-search": (RagSearchInput, lambda v: f"RAG search for query '{v.query}' (top_k={v.top_k}, num_results={v.num_results})")
+            }
+
+            if tool_name not in tool_map:
+                self._send_error_response(f"Unknown tool: {tool_name}", 400, request_id)
+                return
+
+            model, func = tool_map[tool_name]
+            try:
+                validated_args = model(**tool_arguments)
+            except ValidationError as ve:
+                self._send_error_response(f"Input validation error: {ve}", 400, request_id)
+                return
+
+            result = func(validated_args)
+
+            response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "content": [
+                        {"type": "text", "text": str(result)}
+                    ]
+                }
+            }
+            self._send_json_response(response)
+
+        except Exception as e:
+            self._send_error_response(f"Tool execution error: {str(e)}", 500, request_id)
     
     def _verify_auth(self) -> bool:
         """Verify API key authentication using modern Python features."""
@@ -318,34 +410,7 @@ class MCPHandler(BaseHTTPRequestHandler):
                 self._send_error_response("Unauthorized", 401)
                 return
             
-            tools = [
-                {
-                    "name": "get-project-info",
-                    "description": "Retrieve project information for Java, Node.js, or TypeScript environments",
-                    "input_schema": {
-                        "type": "object",
-                        "properties": {
-                            "project_name": {"type": "string", "description": "The name of the project"},
-                            "environment": {"type": "string", "default": "general", "description": "Environment type"}
-                        },
-                        "required": ["project_name"]
-                    }
-                },
-                {
-                    "name": "get-environment-tools",
-                    "description": "Get development tools for Java, Node.js, or TypeScript environments",
-                    "input_schema": {
-                        "type": "object",
-                        "properties": {
-                            "environment": {"type": "string", "description": "Environment type: java, node, typescript"},
-                            "query": {"type": "string", "default": "", "description": "Specific query about tools"}
-                        },
-                        "required": ["environment"]
-                    }
-                },
-
-            ]
-            
+            tools = self._get_tool_definitions()
             self._send_json_response({"tools": tools})
         else:
             self._send_error_response("Not found", 404)
@@ -374,108 +439,14 @@ class MCPHandler(BaseHTTPRequestHandler):
             params = data.get("params", {})
 
             if method == "initialize":
-                # MCP initialization handshake - return server capabilities
-                self._send_json_response({
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {
-                        "protocolVersion": "2024-11-05",
-                        "capabilities": {
-                            "tools": {},
-                            "resources": {},
-                            "prompts": {}
-                        },
-                        "serverInfo": {
-                            "name": "pydantic-mcp-server",
-                            "version": "1.0.0"
-                        }
-                    }
-                })
-
+                self._handle_initialize(request_id)
             elif method == "notifications/initialized":
                 # Client acknowledges initialization - no response needed for notifications
                 return
-
             elif method == "tools/list":
-                tools = [
-                    {
-                        "name": "get-project-info",
-                        "description": "Retrieve project information for Java, Node.js, or TypeScript environments",
-                        "inputSchema": ProjectInfoInput.schema()
-                    },
-                    {
-                        "name": "get-environment-tools",
-                        "description": "Get development tools for Java, Node.js, or TypeScript environments",
-                        "inputSchema": EnvironmentToolsInput.schema()
-                    },
-                    {
-                        "name": "rag-search",
-                        "description": "Search the web for information using RAG-like similarity sorting",
-                        "inputSchema": RagSearchInput.schema()
-                    }
-                ]
-                
-                response = {
-                    "jsonrpc": "2.0",
-                    "id": request_id,
-                    "result": {"tools": tools}
-                }
-                self._send_json_response(response)
-            
+                self._handle_tools_list(request_id)
             elif method == "tools/call":
-                params = data.get("params", {})
-                tool_name = params.get("name")
-                tool_arguments = params.get("arguments", {})
-                
-                if not tool_name:
-                    self._send_error_response("Tool name is required", 400, request_id)
-                    return
-                
-                try:
-                    # Universal Pydantic validation
-                    if tool_name == "get-project-info":
-                        try:
-                            validated = ProjectInfoInput(**tool_arguments)
-                        except ValidationError as ve:
-                            self._send_error_response(f"Input validation error: {ve}", 400, request_id)
-                            return
-                        result = ProjectInfoTools.get_project_info(validated.project_name, validated.environment)
-                    elif tool_name == "get-environment-tools":
-                        try:
-                            validated = EnvironmentToolsInput(**tool_arguments)
-                        except ValidationError as ve:
-                            self._send_error_response(f"Input validation error: {ve}", 400, request_id)
-                            return
-                        result = ProjectInfoTools.get_environment_tools(validated.environment, validated.query)
-                    elif tool_name == "rag-search":
-                        try:
-                            validated = RagSearchInput(**tool_arguments)
-                        except ValidationError as ve:
-                            self._send_error_response(f"Input validation error: {ve}", 400, request_id)
-                            return
-                        # Placeholder: implement RAG search logic here
-                        result = f"RAG search for query '{validated.query}' (top_k={validated.top_k}, num_results={validated.num_results})"
-                    else:
-                        self._send_error_response(f"Unknown tool: {tool_name}", 400, request_id)
-                        return
-                    
-                    response = {
-                        "jsonrpc": "2.0",
-                        "id": request_id,
-                        "result": {
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": str(result)
-                                }
-                            ]
-                        }
-                    }
-                    self._send_json_response(response)
-                
-                except Exception as e:
-                    self._send_error_response(f"Tool execution error: {str(e)}", 500, request_id)
-            
+                self._handle_tool_call(request_id, params)
             else:
                 # Unknown method - return proper JSON-RPC error
                 self._send_json_response({
@@ -502,7 +473,6 @@ def run_server() -> None:
     """Run the HTTP MCP server with modern Python features."""
     import sys
     import signal
-    from contextlib import contextmanager
     
 
     host_env = os.environ.get("HOST", "0.0.0.0")
