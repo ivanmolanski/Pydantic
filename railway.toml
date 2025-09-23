@@ -1,17 +1,13 @@
-# Railway.app configuration for easy deployment
 [build]
-# Railway is currently using Dockerfile builder
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "python -c 'from src.mcp_local_rag.simple_http_server import run_server; run_server()'"
+startCommand = "python -m src.mcp_local_rag.simple_http_server"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 
 [env]
-PORT = { default = "8001" }
-HOST = { default = "0.0.0.0" }
-PYTHONPATH = { default = "/app/src" }
-# Set this in Railway dashboard variables section:
-# MCP_API_KEY = "your-secure-api-key1"
+PORT = "8001"
+HOST = "0.0.0.0"
+PYTHONPATH = "/app/src"
