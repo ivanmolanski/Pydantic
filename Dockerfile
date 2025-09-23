@@ -5,8 +5,10 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy requirements first for better caching
+# Copy project configuration and readme for packaging
 COPY pyproject.toml ./
+COPY README.md ./
+
 # Use standard install for production, not editable mode
 RUN pip install .
 
