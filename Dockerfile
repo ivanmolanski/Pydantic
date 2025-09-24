@@ -1,34 +1,50 @@
+# ---- Builder Stage: Install dependencies ----
+FROM python:3.12-slim as builder
+
+WORKDIR /app
+
+# Install uv for faster dependency management
+RUN pip install uv
+
+# Copy dependency definition files
+COPY pyproject.toml ./
+
+# Install dependencies into a virtual environment
+# This creates an isolated environment that we can copy to the final image
+RUN uv pip install --system -e .
+
+# ---- Final Stage: Create the production image ----
 FROM python:3.12-slim
 
-# Install curl for health checks
+# Install curl for the health check
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy project configuration and readme for packaging
-COPY pyproject.toml ./
-COPY README.md ./
+# Create a non-root user for security
+RUN useradd --create-home --shell /bin/bash --uid 1000 appuser
+USER appuser
 
-# Use standard install for production, not editable mode
-RUN pip install .
+# Copy installed dependencies from the builder stage
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy source code
-COPY src/ ./src/
+# Copy your application source code
+COPY --chown=appuser:appuser src/ ./src
 
-# Create a non-root user
-RUN useradd -m -u 1000 mcpuser && chown -R mcpuser:mcpuser /app
-USER mcpuser
-
-# Set environment variables
-ENV PYTHONPATH=/app/src
+# Set environment variables for the application
+ENV PYTHONPATH=/app
 ENV HOST=0.0.0.0
 ENV PORT=8001
-
-# Set default API key (should be overridden in production)
-# For Railway: Use your actual API key from Railway Variables
+# This default key will be overridden by Railway's environment variables
 ENV MCP_API_KEY="Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 
-# Health check
+# Expose the port the application will run on
+EXPOSE 8001
 
-# Run the server
+# Health check to ensure the server is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8001/health || exit 1
+
+# Command to run the application
 CMD ["python", "-m", "src.mcp_local_rag.simple_http_server"]
