@@ -26,7 +26,7 @@ ENV PORT=8001
 
 # Set default API key (should be overridden in production)
 # For Railway: Use your actual API key from Railway Variables
-ENV MCP_API_KEY=Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs
+ENV MCP_API_KEY="Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 
 # Health check
 
