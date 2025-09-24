@@ -8,6 +8,7 @@ RUN pip install uv
 
 # Copy dependency definition files
 COPY pyproject.toml ./
+COPY README.md ./
 # Copy source code so editable install works
 COPY src/ ./src
 
