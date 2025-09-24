@@ -19,8 +19,14 @@ COPY src/ ./src/
 RUN useradd -m -u 1000 mcpuser && chown -R mcpuser:mcpuser /app
 USER mcpuser
 
-# Expose port
-EXPOSE 8001
+# Set environment variables
+ENV PYTHONPATH=/app/src
+ENV HOST=0.0.0.0
+ENV PORT=8001
+
+# Set default API key (should be overridden in production)
+# For Railway: Use your actual API key from Railway Variables
+ENV MCP_API_KEY=Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
