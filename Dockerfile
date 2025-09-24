@@ -8,6 +8,8 @@ RUN pip install uv
 
 # Copy dependency definition files
 COPY pyproject.toml ./
+# Copy source code so editable install works
+COPY src/ ./src
 
 # Install dependencies into a virtual environment
 # This creates an isolated environment that we can copy to the final image
