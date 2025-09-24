@@ -37,7 +37,7 @@ ENV PYTHONPATH=/app
 ENV HOST=0.0.0.0
 ENV PORT=8001
 # This default key will be overridden by Railway's environment variables
-ENV MCP_API_KEY="Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
+ENV MCP_API_KEY="mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 
 # Expose the port the application will run on
 EXPOSE 8001
