@@ -24,16 +24,14 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Create a non-root user for security
-RUN useradd --create-home --shell /bin/bash --uid 1000 appuser
-USER appuser
+# Run as root for Railway compatibility
 
 # Copy installed dependencies from the builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy your application source code
-COPY --chown=appuser:appuser src/ ./src
+COPY src/ ./src
 
 # Set environment variables for the application
 ENV PYTHONPATH=/app
@@ -45,9 +43,7 @@ ENV MCP_API_KEY="mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 # Expose the port the application will run on
 EXPOSE 8001
 
-# Health check to ensure the server is running
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8001/health || exit 1
+# Removed HEALTHCHECK to avoid conflicts with Railway's health monitoring
 
 # Command to run the application
 CMD ["python", "-m", "src.mcp_local_rag.simple_http_server"]
