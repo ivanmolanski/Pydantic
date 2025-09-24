@@ -29,8 +29,6 @@ ENV PORT=8001
 ENV MCP_API_KEY=Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8001/health || exit 1
 
 # Run the server
 CMD ["python", "-m", "src.mcp_local_rag.simple_http_server"]
