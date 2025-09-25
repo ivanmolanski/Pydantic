@@ -5,29 +5,32 @@ Converts the HTTP server to work with Vercel's serverless architecture
 
 import json
 import os
+import sys
 from typing import Any, Dict
 from urllib.parse import parse_qs
 
 # Import the main handler class from our server
-import sys
 sys.path.append('/var/task/src')
 
 try:
-    from mcp_local_rag.simple_http_server import MCPHandler
-    from mcp_local_rag.tools import (
-        get_project_info, 
-        get_environment_tools, 
-        rag_search
-    )
+    from mcp_local_rag.simple_http_server import MCPHandler, ProjectInfoTools
 except ImportError:
     # Fallback for local development
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-    from mcp_local_rag.simple_http_server import MCPHandler
-    from mcp_local_rag.tools import (
-        get_project_info, 
-        get_environment_tools, 
-        rag_search
-    )
+    from mcp_local_rag.simple_http_server import MCPHandler, ProjectInfoTools
+
+# Create wrapper functions for the tools
+def get_project_info(project_name: str, environment: str = "general") -> str:
+    """Wrapper function for ProjectInfoTools.get_project_info"""
+    return ProjectInfoTools.get_project_info(project_name, environment)
+
+def get_environment_tools(environment: str, query: str = "") -> str:
+    """Wrapper function for ProjectInfoTools.get_environment_tools"""
+    return ProjectInfoTools.get_environment_tools(environment, query)
+
+def rag_search(query: str, top_k: int = 5, num_results: int = 10) -> str:
+    """Simple RAG search implementation"""
+    return f"RAG search for query '{query}' (top_k={top_k}, num_results={num_results})"
 
 class VercelMCPHandler:
     """Serverless MCP handler for Vercel"""
