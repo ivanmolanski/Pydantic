@@ -22,7 +22,7 @@
   },
   "functions": {
     "src/mcp_local_rag/vercel_handler.py": {
-      "runtime": "python3.9"
+      "runtime": "python3.12"
     }
   }
 }
