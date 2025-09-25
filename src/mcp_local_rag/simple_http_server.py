@@ -6,6 +6,8 @@ Optimized for Python 3.12+ with modern features.
 
 import json
 import os
+import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from typing import Dict, Any, Optional
@@ -417,15 +419,15 @@ class MCPHandler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         """Handle POST requests (MCP protocol)."""
-        if self.path != '/mcp':
-            self._send_error_response("Not found", 404)
-            return
-        
-        if not self._verify_auth():
-            self._send_error_response("Unauthorized", 401)
-            return
-        
         try:
+            if self.path != '/mcp':
+                self._send_error_response("Not found", 404)
+                return
+            
+            if not self._verify_auth():
+                self._send_error_response("Unauthorized", 401)
+                return
+            
             content_length = int(self.headers.get('Content-Length', 0))
             if content_length == 0:
                 self._send_error_response("Request body is required")
@@ -460,8 +462,15 @@ class MCPHandler(BaseHTTPRequestHandler):
                 })
         
         except json.JSONDecodeError as e:
+            print(f"❌ JSON decode error: {e}")
             self._send_error_response(f"Invalid JSON: {str(e)}")
+        except ConnectionError as e:
+            print(f"❌ Connection error: {e}")
+            self._send_error_response(f"Connection error: {str(e)}", 502)
         except Exception as e:
+            print(f"❌ Internal server error: {e}")
+            import traceback
+            traceback.print_exc()
             self._send_error_response(f"Internal server error: {str(e)}", 500)
     
     def log_message(self, format, *args):
@@ -469,10 +478,37 @@ class MCPHandler(BaseHTTPRequestHandler):
         print(f"[{self.address_string()}] {format % args}")
 
 
+def start_railway_keepalive(host: str, port: int) -> None:
+    """Start a keepalive thread for Railway deployment to prevent sleeping."""
+    if not os.environ.get("RAILWAY_ENVIRONMENT"):
+        return
+    
+    import requests
+    
+    def keepalive_ping():
+        """Ping the health endpoint every 10 minutes to keep Railway awake."""
+        url = f"http://{host}:{port}/health"
+        while True:
+            try:
+                time.sleep(600)  # 10 minutes
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    print("🚂 Railway keepalive ping successful")
+                else:
+                    print(f"⚠️  Railway keepalive ping failed: {response.status_code}")
+            except Exception as e:
+                print(f"⚠️  Railway keepalive ping error: {e}")
+    
+    keepalive_thread = threading.Thread(target=keepalive_ping, daemon=True)
+    keepalive_thread.start()
+    print("🚂 Railway keepalive service started")
+
+
 def run_server() -> None:
     """Run the HTTP MCP server with modern Python features."""
     import sys
     import signal
+    import time
     
 
     host_env = os.environ.get("HOST", "0.0.0.0")
@@ -483,8 +519,15 @@ def run_server() -> None:
         host = host_env
     except OSError:
         host = "0.0.0.0"
+    
+    # Railway provides PORT dynamically, fallback to 8001 for local development
     port = int(os.environ.get("PORT", 8001))
     api_key = os.environ.get("MCP_API_KEY")
+    
+    # Railway startup delay to allow container to stabilize
+    if os.environ.get("RAILWAY_ENVIRONMENT"):
+        print("🚂 Railway deployment detected - waiting for container to stabilize...")
+        time.sleep(3)
 
     print("=" * 60)
     print("🚀 Starting Pydantic MCP Server for GitHub Copilot")
@@ -492,6 +535,7 @@ def run_server() -> None:
     print(f"Python Version: {sys.version.split()[0]}")
     print(f"Host:          {host}")
     print(f"Port:          {port}")
+    print(f"Railway Env:   {'Yes' if os.environ.get('RAILWAY_ENVIRONMENT') else 'No'}")
     print(f"Authentication: {'🔒 Enabled' if api_key else '🔓 Development mode (no auth)'}")
     if api_key:
         print(f"API Key:       {api_key[:8]}...")  # Show first 8 chars for debugging
@@ -510,7 +554,29 @@ def run_server() -> None:
         print(f"   Authorization: Bearer {api_key}")
         print()
 
-    server = HTTPServer((host, port), MCPHandler)
+    # Create server with better error handling for Railway
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            server = HTTPServer((host, port), MCPHandler)
+            print(f"✅ Server created successfully on attempt {attempt + 1}")
+            break
+        except OSError as e:
+            if attempt < max_retries - 1:
+                print(f"⚠️  Server creation failed (attempt {attempt + 1}): {e}")
+                print("   Retrying in 2 seconds...")
+                time.sleep(2)
+            else:
+                print(f"❌ Failed to create server after {max_retries} attempts: {e}")
+                sys.exit(1)
+    
+    # Set socket options for better Railway compatibility
+    server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if hasattr(socket, 'SO_REUSEPORT'):
+        try:
+            server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except OSError:
+            pass  # Some systems don't support SO_REUSEPORT
     
     # Modern signal handling
     def signal_handler(signum: int, frame) -> None:
@@ -521,18 +587,32 @@ def run_server() -> None:
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    # Start Railway keepalive service if needed
+    start_railway_keepalive(host, port)
+    
     try:
         print(f"🌐 Server running at http://{host}:{port}")
         print("   Press Ctrl+C to stop the server")
+        if os.environ.get("RAILWAY_ENVIRONMENT"):
+            print("🚂 Railway deployment ready for connections")
         print()
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n🛑 Server stopped by user")
+    except OSError as e:
+        print(f"\n❌ Server network error: {e}")
+        print("   This might be a Railway deployment issue - check logs")
+        sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Server error: {e}")
+        print(f"\n❌ Unexpected server error: {e}")
+        print("   Please report this issue with logs")
+        sys.exit(1)
     finally:
-        server.server_close()
-        print("✅ Server shutdown complete")
+        try:
+            server.server_close()
+            print("✅ Server shutdown complete")
+        except:
+            pass
 
 
 if __name__ == "__main__":
