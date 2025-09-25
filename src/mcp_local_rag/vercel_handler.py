@@ -21,8 +21,6 @@ try:
     )
 except ImportError:
     # Fallback for local development
-    import sys
-    import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
     from mcp_local_rag.simple_http_server import MCPHandler
     from mcp_local_rag.tools import (
