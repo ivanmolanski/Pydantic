@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/mcp_local_rag/vercel_handler.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/mcp",
+      "dest": "src/mcp_local_rag/vercel_handler.py"
+    },
+    {
+      "src": "/health",
+      "dest": "src/mcp_local_rag/vercel_handler.py"
+    }
+  ],
+  "env": {
+    "MCP_API_KEY": "mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs",
+    "PYTHONPATH": "/var/task/src"
+  },
+  "functions": {
+    "src/mcp_local_rag/vercel_handler.py": {
+      "runtime": "python3.12"
+    }
+  }
+}

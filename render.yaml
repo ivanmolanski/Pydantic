@@ -7,10 +7,11 @@ services:
     startCommand: python -c "from src.mcp_local_rag.simple_http_server import run_server; run_server()"
     healthCheckPath: /health
     envVars:
+      - key: MCP_API_KEY
+        value: mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs
       - key: PORT
         value: 8001
       - key: HOST  
         value: 0.0.0.0
       - key: PYTHONPATH
         value: /opt/render/project/src
-      # MCP_API_KEY should be set as an environment variable in Render dashboard

@@ -4,7 +4,7 @@
       "type": "http",
       "url": "https://pydantic-mcp-server-production.up.railway.app/mcp",
       "headers": {
-        "Authorization": "Bearer your-secure-api-key1"
+        "Authorization": "Bearer mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
       },
       "tools": ["get-project-info", "get-environment-tools", "rag-search"]
     }

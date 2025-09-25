@@ -5,7 +5,7 @@
 
 set -e
 
-API_KEY="your-secure-api-key1"
+API_KEY="mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 LOCAL_URL="http://localhost:8001"
 RAILWAY_URL="${1:-https://pydantic-mcp-server-production.up.railway.app}"
 
