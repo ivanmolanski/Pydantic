@@ -114,7 +114,7 @@ class ProjectInfoTools:
                     if isinstance(value, list):
                         info_parts.append(f"- {key.title()}: {', '.join(value)}")
                     else:
-                        info_parts.append(f"- {key.title}: {value}")
+                        info_parts.append(f"- {key.title()}: {value}")
                 return "\n".join(info_parts)
             else:
                 return f"**{project_name}:** {env_info}"
