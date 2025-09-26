@@ -128,7 +128,7 @@ def get_tool_definitions() -> List[Dict[str, Any]]:
 async def mcp_handler(
     request: MCPRequest,
     authenticated: bool = Depends(verify_api_key)
-):
+) -> Union[MCPResponse, Response]:
     """Handle MCP protocol requests."""
     try:
         if request.method == "initialize":
