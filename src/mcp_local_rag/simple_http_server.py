@@ -10,7 +10,7 @@ import threading
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from enum import Enum
 from pydantic import BaseModel, ValidationError, Field
@@ -257,7 +257,7 @@ class MCPHandler(BaseHTTPRequestHandler):
             }
         })
 
-    def _get_tool_definitions(self) -> list[dict[str, Any]]:
+    def _get_tool_definitions(self) -> List[Dict[str, Any]]:
         """Returns a list of tool definitions."""
         return [
             {
@@ -287,7 +287,7 @@ class MCPHandler(BaseHTTPRequestHandler):
         }
         self._send_json_response(response)
 
-    def _handle_tool_call(self, request_id: str, params: dict[str, Any]) -> None:
+    def _handle_tool_call(self, request_id: str, params: Dict[str, Any]) -> None:
         """Handles the 'tools/call' MCP method."""
         tool_name = params.get("name")
         tool_arguments = params.get("arguments", {})
