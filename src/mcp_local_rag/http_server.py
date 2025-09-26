@@ -217,7 +217,7 @@ def handle_tool_call(request_id: Optional[Union[str, int]], params: Dict[str, An
         tool_map = {
             "get-project-info": (ProjectInfoInput, lambda v: ProjectInfoTools.get_project_info(v.project_name, v.environment)),
             "get-environment-tools": (EnvironmentToolsInput, lambda v: ProjectInfoTools.get_environment_tools(v.environment, v.query)),
-            "rag-search": (RagSearchInput, lambda v: f"RAG search for query '{v.query}' (top_k={v.top_k}, num_results={v.num_results})")
+            "rag-search": (RagSearchInput, lambda v: ProjectInfoTools.rag_search(v.query, v.top_k, v.num_results))
         }
         
         if tool_name not in tool_map:
