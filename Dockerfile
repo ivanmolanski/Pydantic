@@ -21,7 +21,8 @@ ENV MCP_API_KEY="mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 # Expose Railway's dynamic port (PORT env var will be set by Railway)
 
 # Add healthcheck with proper port handling for Railway
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+# Railway needs longer start period due to dependency installation and server startup time
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
   CMD curl -f http://localhost:${PORT:-8001}/health || exit 1
 
 # Run the application
