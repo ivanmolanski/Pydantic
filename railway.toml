@@ -4,10 +4,11 @@ builder = "DOCKERFILE"
 [deploy]
 startCommand = "python -m src.mcp_local_rag.simple_http_server"
 healthcheckPath = "/health"
-healthcheckTimeout = 100
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
+sleepPolicy = "NEVER"
 
 [env]
-PORT = "8001"
 HOST = "0.0.0.0"
 PYTHONPATH = "/app/src"
+MCP_API_KEY = "mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
