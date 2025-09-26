@@ -623,8 +623,9 @@ def run_server() -> None:
         if os.environ.get("RAILWAY_ENVIRONMENT"):
             print("   Railway deployment failed - check port binding")
             sys.exit(1)
-        print("   This might be a Railway deployment issue - check logs")
-        sys.exit(1)
+        else:
+            print("   This might be a deployment issue - check logs")
+            sys.exit(1)
     except Exception as e:
         print(f"\n❌ Unexpected server error: {e}")
         print("   Please report this issue with logs")
