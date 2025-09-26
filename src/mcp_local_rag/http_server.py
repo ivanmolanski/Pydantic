@@ -34,7 +34,6 @@ app.add_middleware(
 )
 
 # MCP Request/Response models
-from typing import Union
 
 class MCPRequest(BaseModel):
     jsonrpc: str = "2.0"
