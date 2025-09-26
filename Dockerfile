@@ -20,9 +20,9 @@ ENV MCP_API_KEY="mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 
 # Expose Railway's dynamic port (PORT env var will be set by Railway)
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Add healthcheck with proper port handling for Railway
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8001}/health || exit 1
 
 # Run the application
-CMD ["python", "src/main.py"]
+CMD ["python", "app.py"]
