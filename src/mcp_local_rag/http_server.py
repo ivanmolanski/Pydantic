@@ -4,7 +4,7 @@ Compatible with the existing simple_http_server.py implementation.
 """
 
 import os
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
@@ -102,7 +102,7 @@ async def list_tools(authenticated: bool = Depends(verify_api_key)):
     tools = get_tool_definitions()
     return {"tools": tools}
 
-def get_tool_definitions() -> list[dict[str, Any]]:
+def get_tool_definitions() -> List[Dict[str, Any]]:
     """Returns a list of tool definitions."""
     return [
         {

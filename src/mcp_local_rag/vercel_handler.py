@@ -6,7 +6,7 @@ Converts the HTTP server to work with Vercel's serverless architecture
 import json
 import os
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, List
 from urllib.parse import parse_qs
 
 # Import the main handler class from our server
@@ -53,7 +53,7 @@ class VercelMCPHandler:
         
         return False
     
-    def _get_tool_definitions(self) -> list[dict[str, Any]]:
+    def _get_tool_definitions(self) -> List[Dict[str, Any]]:
         """Returns tool definitions"""
         return [
             {
