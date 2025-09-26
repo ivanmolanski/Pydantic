@@ -446,7 +446,6 @@ class MCPHandler(BaseHTTPRequestHandler):
                 # Client acknowledges initialization - no JSON-RPC response needed for notifications
                 # but we still need to send a proper HTTP 204 No Content response
                 self.send_response(204)
-                self.send_header('Content-Type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
                 self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
