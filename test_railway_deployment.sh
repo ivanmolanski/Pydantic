@@ -102,8 +102,6 @@ fi
 
 echo
 echo "2. Railway MCP Protocol Test:"
-# Initialize variable in case the request fails
-RAILWAY_HTTP_STATUS=""
 RAILWAY_HTTP_STATUS=$(curl -w "%{http_code}" -s -X POST ${RAILWAY_URL}/mcp \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${API_KEY}" \
