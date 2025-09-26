@@ -41,8 +41,6 @@ class MCPRequest(BaseModel):
     method: str
     params: Optional[Dict[str, Any]] = {}
 
-class MCPToolResult(BaseModel):
-    content: list[dict[str, str]]
 
 class MCPResponse(BaseModel):
     jsonrpc: str = "2.0"
