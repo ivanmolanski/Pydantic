@@ -391,11 +391,23 @@ class MCPHandler(BaseHTTPRequestHandler):
         path = parsed_url.path
         
         if path == '/health':
-            self._send_json_response({
+            # Comprehensive health check for Railway deployment  
+            health_data = {
                 "status": "healthy",
                 "server": "pydantic-mcp-server",
-                "version": "1.0.0"
-            })
+                "version": "1.0.0",
+                "timestamp": time.time()
+            }
+            
+            # Add Railway-specific health information
+            if os.environ.get("RAILWAY_ENVIRONMENT"):
+                health_data["railway"] = {
+                    "environment": os.environ.get("RAILWAY_ENVIRONMENT"),
+                    "service_id": os.environ.get("RAILWAY_SERVICE_ID", "unknown"),
+                    "deployment_id": os.environ.get("RAILWAY_DEPLOYMENT_ID", "unknown")
+                }
+            
+            self._send_json_response(health_data)
         elif path == '/':
             self._send_json_response({
                 "name": "Pydantic MCP Server",
@@ -530,10 +542,11 @@ def run_server() -> None:
     port = int(os.environ.get("PORT", 8001))
     api_key = os.environ.get("MCP_API_KEY")
     
-    # Railway startup delay to allow container to stabilize
+    # Railway startup optimization - minimal delay
     if os.environ.get("RAILWAY_ENVIRONMENT"):
-        print("🚂 Railway deployment detected - waiting for container to stabilize...")
-        time.sleep(3)
+        print("🚂 Railway deployment detected - starting server...")
+        # Small delay only if needed for Railway port binding
+        time.sleep(0.5)
 
     print("=" * 60)
     print("🚀 Starting Pydantic MCP Server for GitHub Copilot")
@@ -607,8 +620,12 @@ def run_server() -> None:
         print("\n🛑 Server stopped by user")
     except OSError as e:
         print(f"\n❌ Server network error: {e}")
-        print("   This might be a Railway deployment issue - check logs")
-        sys.exit(1)
+        if os.environ.get("RAILWAY_ENVIRONMENT"):
+            print("   Railway deployment failed - check port binding")
+            sys.exit(1)
+        else:
+            print("   This might be a deployment issue - check logs")
+            sys.exit(1)
     except Exception as e:
         print(f"\n❌ Unexpected server error: {e}")
         print("   Please report this issue with logs")
