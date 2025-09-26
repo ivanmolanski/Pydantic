@@ -1,4 +1,6 @@
 #!/bin/bash
+# NOTE: Ensure this script has execute permissions by running:
+#   chmod +x test_railway_deployment.sh
 
 # Comprehensive Railway Deployment Test Script
 # Tests the health check and MCP fixes for Railway deployment
