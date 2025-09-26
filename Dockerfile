@@ -19,7 +19,6 @@ ENV HOST=0.0.0.0
 ENV MCP_API_KEY="mcp_S4bRw3Y8M7RqP8ilyRFsOPsNs"
 
 # Expose Railway's dynamic port (PORT env var will be set by Railway)
-EXPOSE $PORT
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
