@@ -293,6 +293,19 @@ class VercelMCPHandler:
                             })
                         }
                 
+                elif method_name == "notifications/initialized":
+                    # Client acknowledges initialization - no JSON-RPC response needed for notifications
+                    # but we still need to send a proper HTTP 204 No Content response
+                    return {
+                        "statusCode": 204,
+                        "headers": {
+                            "Access-Control-Allow-Origin": "*",
+                            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization"
+                        },
+                        "body": ""
+                    }
+                
                 else:
                     return {
                         "statusCode": 200,

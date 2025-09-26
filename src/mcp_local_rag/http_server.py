@@ -5,8 +5,9 @@ Compatible with the existing simple_http_server.py implementation.
 
 import os
 from typing import Dict, Any, Optional, Union, List
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 
 # Import existing components from simple_http_server
@@ -123,19 +124,24 @@ def get_tool_definitions() -> List[Dict[str, Any]]:
     ]
 
 # MCP Protocol endpoint
-@app.post("/mcp")
+@app.post("/mcp", response_model=None)
 async def mcp_handler(
     request: MCPRequest,
     authenticated: bool = Depends(verify_api_key)
-) -> MCPResponse:
+) -> Union[MCPResponse, Response]:
     """Handle MCP protocol requests."""
     try:
         if request.method == "initialize":
             return handle_initialize(request.id)
         
         elif request.method == "notifications/initialized":
-            # Client acknowledges initialization - no response needed
-            return MCPResponse(id=request.id, result={})
+            # Client acknowledges initialization - no JSON-RPC response needed for notifications
+            # but we still need to send a proper HTTP 204 No Content response
+            return Response(status_code=204, headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            })
             
         elif request.method == "tools/list":
             return handle_tools_list(request.id)
