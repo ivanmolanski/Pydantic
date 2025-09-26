@@ -30,7 +30,11 @@ sleep 3
 echo
 echo "1. Testing Local Health Endpoint:"
 HEALTH_RESPONSE=$(curl -s http://localhost:$LOCAL_PORT/health)
-echo $HEALTH_RESPONSE | jq .
+if command -v jq >/dev/null 2>&1 && echo "$HEALTH_RESPONSE" | jq . >/dev/null 2>&1; then
+    echo $HEALTH_RESPONSE | jq .
+else
+    echo "Raw response (jq not available or invalid JSON): $HEALTH_RESPONSE"
+fi
 
 # Check if health check shows Railway environment
 if echo $HEALTH_RESPONSE | grep -q '"railway"'; then
@@ -98,10 +102,12 @@ fi
 
 echo
 echo "2. Railway MCP Protocol Test:"
+# Initialize variable in case the request fails
+RAILWAY_HTTP_STATUS=""
 RAILWAY_HTTP_STATUS=$(curl -w "%{http_code}" -s -X POST ${RAILWAY_URL}/mcp \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${API_KEY}" \
-  -d '{"jsonrpc": "2.0", "method": "notifications/initialized"}' -o /dev/null)
+  -d '{"jsonrpc": "2.0", "method": "notifications/initialized"}' -o /dev/null 2>/dev/null)
 
 if [ "$RAILWAY_HTTP_STATUS" = "204" ]; then
     echo "✅ Railway MCP notifications/initialized working correctly"

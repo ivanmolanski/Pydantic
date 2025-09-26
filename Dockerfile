@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Copy all necessary files
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md app.py ./
 COPY src/ ./src/
 
 # Install dependencies directly (no multi-stage build)
