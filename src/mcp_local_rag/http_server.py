@@ -138,7 +138,6 @@ async def mcp_handler(
             # Client acknowledges initialization - no JSON-RPC response needed for notifications
             # but we still need to send a proper HTTP 204 No Content response
             return Response(status_code=204, headers={
-                "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization"
